@@ -6,8 +6,7 @@ exports.bookRoom = async (req, res) => {
   try {
     const db = await dbPromise;
     const errors = validationResult(req);
-    if (!errors.isEmpty())
-      return res.status(400).json({ error: errors.array() });
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array() });
 
     const { room_id, username, start_time, end_time } = req.body;
     const room = await db.Room.findByPk(room_id);
@@ -34,9 +33,7 @@ exports.bookRoom = async (req, res) => {
     });
 
     if (overlap) {
-      return res
-        .status(409)
-        .json({ error: "Room is already booked during that time" });
+      return res.status(409).json({ error: "Room is already booked during that time" });
     }
 
     const booking = await db.Booking.create({
@@ -47,14 +44,10 @@ exports.bookRoom = async (req, res) => {
       end_time,
     });
 
-    return res
-      .status(201)
-      .json({ message: "Booking created successfully", booking });
+    return res.status(201).json({ message: "Booking created successfully", booking });
   } catch (err) {
     console.error(err);
-    return res
-      .status(500)
-      .json({ error: err.message || "Internal server error" });
+    return res.status(500).json({ error: err.message || "Internal server error" });
   }
 };
 
@@ -62,14 +55,12 @@ exports.checkBooking = async (req, res) => {
   try {
     const db = await dbPromise;
     const errors = validationResult(req);
-    if (!errors.isEmpty())
-      return res.status(400).json({ error: errors.array() });
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array() });
 
     const { room_id, start_time, end_time } = req.body;
     const room = await db.Room.findByPk(room_id);
     if (!room) return res.status(404).json({ error: "Room not found" });
-    if (!room.available)
-      return res.status(400).json({ error: "Room is not available" });
+    if (!room.available) return res.status(400).json({ error: "Room is not available" });
 
     const overlap = await db.Booking.findOne({
       where: {
@@ -85,16 +76,12 @@ exports.checkBooking = async (req, res) => {
     });
 
     if (overlap) {
-      return res
-        .status(409)
-        .json({ error: "Room is already booked during that time" });
+      return res.status(409).json({ error: "Room is already booked during that time" });
     }
     return res.status(200).json({ message: "Room is available for booking" });
   } catch (err) {
     console.error(err);
-    return res
-      .status(500)
-      .json({ error: err.message || "Internal server error" });
+    return res.status(500).json({ error: err.message || "Internal server error" });
   }
 };
 
@@ -102,8 +89,7 @@ exports.displayRooms = async (req, res) => {
   try {
     const db = await dbPromise;
     const errors = validationResult(req);
-    if (!errors.isEmpty())
-      return res.status(400).json({ error: errors.array() });
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array() });
 
     const { date } = req.query;
     let startOfDay, endOfDay;
@@ -140,9 +126,7 @@ exports.displayRooms = async (req, res) => {
     return res.status(200).json({ rooms });
   } catch (err) {
     console.error(err);
-    return res
-      .status(500)
-      .json({ error: err.message || "Internal server error" });
+    return res.status(500).json({ error: err.message || "Internal server error" });
   }
 };
 
@@ -150,8 +134,7 @@ exports.changeBookStatus = async (req, res) => {
   try {
     const db = await dbPromise;
     const errors = validationResult(req);
-    if (!errors.isEmpty())
-      return res.status(400).json({ error: errors.array() });
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array() });
 
     const { booking_id, new_status, username } = req.body;
 
@@ -163,9 +146,7 @@ exports.changeBookStatus = async (req, res) => {
     if (!booking) return res.status(404).json({ error: "Booking not found" });
 
     if (booking.user !== username) {
-      return res
-        .status(403)
-        .json({ error: "You can only change your own bookings" });
+      return res.status(403).json({ error: "You can only change your own bookings" });
     }
 
     booking.status = new_status;
@@ -175,17 +156,13 @@ exports.changeBookStatus = async (req, res) => {
     const user = await db.User.findByPk(username);
 
     console.log(`Notification to ${user.email || user.phone_num}:`);
-    console.log(
-      `Your booking for Room ${room.room_number} has been ${new_status}.`,
-    );
+    console.log(`Your booking for Room ${room.room_number} has been ${new_status}.`);
     console.log(`Time: ${booking.start_time} to ${booking.end_time}`);
 
     return res.status(200).json({ message: "Booking status updated", booking });
   } catch (err) {
     console.error(err);
-    return res
-      .status(500)
-      .json({ error: err.message || "Internal server error" });
+    return res.status(500).json({ error: err.message || "Internal server error" });
   }
 };
 
@@ -193,8 +170,7 @@ exports.getRoomBookings = async (req, res) => {
   try {
     const db = await dbPromise;
     const errors = validationResult(req);
-    if (!errors.isEmpty())
-      return res.status(400).json({ error: errors.array() });
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array() });
 
     const { room_id, date } = req.query;
 
@@ -210,6 +186,7 @@ exports.getRoomBookings = async (req, res) => {
     const bookings = await db.Booking.findAll({
       where: {
         room_id,
+        status: { [Op.ne]: "cancelled" },
         start_time: { [Op.lt]: endOfDay },
         end_time: { [Op.gt]: startOfDay },
       },
@@ -230,19 +207,14 @@ exports.getRoomBookings = async (req, res) => {
       startDate.setHours(startDate.getHours() + 7);
       endDate.setHours(endDate.getHours() + 7);
 
-      const startHour =
-        startDate.getUTCHours() + startDate.getUTCMinutes() / 60;
+      const startHour = startDate.getUTCHours() + startDate.getUTCMinutes() / 60;
       const endHour = endDate.getUTCHours() + endDate.getUTCMinutes() / 60;
 
       if (startHour < 5 || startHour > 23) {
-        throw new Error(
-          `Start time ${booking.start_time} is outside valid range (5:00–23:00)`,
-        );
+        throw new Error(`Start time ${booking.start_time} is outside valid range (5:00–23:00)`);
       }
       if (endHour < 5 || endHour > 23) {
-        throw new Error(
-          `End time ${booking.end_time} is outside valid range (5:00–23:00)`,
-        );
+        throw new Error(`End time ${booking.end_time} is outside valid range (5:00–23:00)`);
       }
 
       const mappedStart = startHour - 5;
@@ -274,9 +246,7 @@ exports.getRoomBookings = async (req, res) => {
     });
   } catch (err) {
     console.error("Error in getRoomBookings:", err);
-    return res
-      .status(500)
-      .json({ error: err.message || "Internal server error" });
+    return res.status(500).json({ error: err.message || "Internal server error" });
   }
 };
 
@@ -284,8 +254,7 @@ exports.getRoomId = async (req, res) => {
   try {
     const db = await dbPromise;
     const errors = validationResult(req);
-    if (!errors.isEmpty())
-      return res.status(400).json({ error: errors.array() });
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array() });
 
     const { building_id, room_number } = req.query;
 
@@ -305,9 +274,7 @@ exports.getRoomId = async (req, res) => {
     });
   } catch (err) {
     console.error("Error in getRoomId:", err);
-    return res
-      .status(500)
-      .json({ error: err.message || "Internal server error" });
+    return res.status(500).json({ error: err.message || "Internal server error" });
   }
 };
 
@@ -315,8 +282,7 @@ exports.getUserBookings = async (req, res) => {
   try {
     const db = await dbPromise;
     const errors = validationResult(req);
-    if (!errors.isEmpty())
-      return res.status(400).json({ error: errors.array() });
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array() });
 
     const { username } = req.body;
 
@@ -345,8 +311,69 @@ exports.getUserBookings = async (req, res) => {
     return res.status(200).json({ username, bookings });
   } catch (err) {
     console.error("Error in getUserBookings:", err);
-    return res
-      .status(500)
-      .json({ error: err.message || "Internal server error" });
+    return res.status(500).json({ error: err.message || "Internal server error" });
+  }
+};
+
+function formatDateTime(dateInput) {
+  const date = new Date(dateInput);
+  const pad = (n) => n.toString().padStart(2, "0");
+
+  const yyyy = date.getUTCFullYear();
+  const mm = pad(date.getUTCMonth() + 1);
+  const dd = pad(date.getUTCDate());
+  const hh = pad(date.getUTCHours());
+  const mi = pad(date.getUTCMinutes());
+  const ss = pad(date.getUTCSeconds());
+
+  return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+}
+
+exports.cancelBooking = async (req, res) => {
+  try {
+    const db = await dbPromise;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
+    }
+
+    const { room_id, username, start_time, end_time } = req.body;
+
+    if (!username || !start_time || !end_time) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const formattedStart = formatDateTime(start_time);
+    const formattedEnd = formatDateTime(end_time);
+
+    const booking = await db.Booking.findOne({
+      where: {
+        room_id: room_id,
+        user: username,
+        status: { [Op.ne]: "cancelled" },
+        [Op.or]: [
+          {
+            start_time: { [Op.lt]: new Date(end_time) },
+            end_time: { [Op.gt]: new Date(start_time) },
+          },
+        ],
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    if (booking.status === "cancelled") {
+      return res.status(400).json({ error: "Booking already cancelled" });
+    }
+
+    booking.status = "cancelled";
+    await booking.save();
+
+    return res.status(200).json({ message: "Booking cancelled successfully" });
+  } catch (err) {
+    console.error("Error in cancelBooking:", err);
+    return res.status(500).json({ error: err.message || "Internal server error" });
   }
 };

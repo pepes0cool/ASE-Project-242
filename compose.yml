@@ -48,7 +48,7 @@ services:
     container_name: mysql-primary
     hostname: mysql-primary
     ports:
-      - "3306:3306"
+      - "3308:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - MYSQL_DATABASE=scams
@@ -57,7 +57,8 @@ services:
       - ./Backend/ROMS.sql:/docker-entrypoint-initdb.d/init.sql
       - ./mysql/primary/conf.d:/etc/mysql/conf.d
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test:
+        ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -81,7 +82,8 @@ services:
       - mysql-replica-data:/var/lib/mysql
       - ./mysql/replica/conf.d:/etc/mysql/conf.d
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test:
+        ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
       timeout: 5s
       retries: 5

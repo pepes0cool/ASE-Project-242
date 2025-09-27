@@ -63,6 +63,7 @@ export default function Schedule() {
           ([id, value]) => value.building === building,
         );
         if (!buildingEntry) {
+          toast.dismiss();
           toast.error("Building ID not found.");
           return;
         }
@@ -110,7 +111,7 @@ export default function Schedule() {
             details[slot] = {
               lecturer: b.full_name,
               subject: "N/A",
-              room: b.room_id,
+              room: room,
               building,
               campus,
             };
@@ -121,6 +122,7 @@ export default function Schedule() {
         setBookingDetails(details);
       } catch (err) {
         console.error(err);
+        toast.dismiss();
         toast.error("Failed to load bookings");
       }
       setLoading(false);
@@ -137,11 +139,13 @@ export default function Schedule() {
     const slot = `${slotDate}-${dayLabel}-${hour}`;
 
     if (bookedSlots.includes(slot)) {
+      toast.dismiss();
       toast.warn("This time has been reserved by someone else.");
       return;
     }
     if (!canBook) return;
     if (!room) {
+      toast.dismiss();
       toast.warn("Please select a room first");
       return;
     }
@@ -162,7 +166,7 @@ export default function Schedule() {
     setShowModal(false);
 
     try {
-      console.log("Booking slots:", selectedSlots);
+      // console.log("Booking slots:", selectedSlots);
 
       // goup selected slots
       const slotsByDay = {};
@@ -172,7 +176,7 @@ export default function Schedule() {
         if (!slotsByDay[dayKey]) slotsByDay[dayKey] = [];
         slotsByDay[dayKey].push(parseInt(time.split(":")[0]));
       });
-      console.log(slotsByDay);
+      // console.log(slotsByDay);
 
       const bookingRequests = [];
 
@@ -193,13 +197,12 @@ export default function Schedule() {
         }
         bookingRequests.push({ d, m, s, e });
       });
-      console.log("Booking requests:", bookingRequests);
+      // console.log("Booking requests:", bookingRequests);
 
       // send booking requests for each continuous range
       // i want to kms
       await Promise.all(
         bookingRequests.map(({ d, m, s, e }) => {
-          console.log("Booking range:", { d, m, s, e });
           const start = new Date(weekDates[0]);
           start.setDate(d);
           start.setMonth(m - 1);
@@ -208,16 +211,16 @@ export default function Schedule() {
           const end = new Date(start);
           end.setHours(e + 1, 0, 0, 0);
 
-          console.log("Start:", start);
-          console.log("End:", end);
-
-          console.log("Booking:", {
-            start_time: start.toISOString(),
-            end_time: end.toISOString(),
-            roomId,
-            username: userInfo.username,
-          });
-
+          // console.log("Start:", start);
+          // console.log("End:", end);
+          //
+          // console.log("Booking:", {
+          //   start_time: start.toISOString(),
+          //   end_time: end.toISOString(),
+          //   roomId,
+          //   username: userInfo.username,
+          // });
+          //
           return api.post("/api/booking/book", {
             room_id: roomId,
             username: userInfo.username,
@@ -227,11 +230,13 @@ export default function Schedule() {
         }),
       );
 
+      toast.dismiss();
       toast.success("Successfully booked!");
       setSelectedSlots([]);
       setRefreshFlag((v) => 1);
     } catch (err) {
       console.error(err);
+      toast.dismiss();
       toast.error(err.response?.data?.error || "Booking failed");
     }
   };
@@ -359,16 +364,36 @@ export default function Schedule() {
                         const isBooked = bookedSlots.includes(slot);
                         const details = bookingDetails[slot];
                         const isEarly = parseInt(hour) <= 7;
+
+                        const now = new Date();
+                        const slotHour = parseInt(hour.split(":")[0]);
+                        const isPastDate =
+                          d <
+                          new Date(
+                            now.getFullYear(),
+                            now.getMonth(),
+                            now.getDate(),
+                          );
+                        const isSameDay =
+                          d.toDateString() === now.toDateString();
+                        const isPastHour =
+                          isSameDay && slotHour <= now.getHours();
+                        const isDisabled = isPastDate || isPastHour;
+
                         const tipCls = `${styles.tooltipContainer} ${
                           isEarly ? styles.tooltipContainerBottom : ""
                         }`;
+
                         return (
                           <div
                             key={slot}
                             className={`${styles.slotCell} ${
                               isSelected ? styles.selected : ""
-                            } ${isBooked ? styles.booked : ""}`}
-                            onClick={() => handleSlotClick(dayLabel, hour, d)}
+                            } ${isBooked ? styles.booked : ""} ${isDisabled ? styles.disabled : ""}`}
+                            onClick={() => {
+                              if (!isDisabled)
+                                handleSlotClick(dayLabel, hour, d);
+                            }}
                           >
                             {isBooked && details && (
                               <div className={tipCls}>

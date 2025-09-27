@@ -15,6 +15,8 @@ import {
   Paper,
   InputAdornment,
   IconButton,
+  Alert,
+  Collapse,
 } from "@mui/material";
 import bg from "../assets/bg.png";
 import hcmut_logo from "../assets/HCMUT.png";
@@ -24,6 +26,13 @@ export default function Signup() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState({
+    username: "",
+    phone: "",
+    email: "",
+    password: "",
+    general: "",
+  });
   const [formData, setFormData] = useState({
     username: "",
     firstName: "",
@@ -31,10 +40,19 @@ export default function Signup() {
     email: "",
     phone: "",
     password: "",
+    confirmPassword: "",
     role: "Guest",
   });
 
   const handleChange = (e) => {
+    // Clear error for the field being changed
+    if (errors[e.target.name]) {
+      setErrors({
+        ...errors,
+        [e.target.name]: "",
+      });
+    }
+
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -47,13 +65,29 @@ export default function Signup() {
         return "teacher";
       case "Guest":
         return "guest";
+      default:
+        return "guest";
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Reset all errors
+    setErrors({
+      username: "",
+      phone: "",
+      email: "",
+      password: "",
+      general: "",
+    });
+
+    // Check if passwords match
     if (formData.password !== formData.confirmPassword) {
+      setErrors({
+        ...errors,
+        password: "Passwords do not match",
+      });
       return;
     }
 
@@ -78,6 +112,32 @@ export default function Signup() {
       navigate("/login", { replace: true });
     } catch (err) {
       console.error(err);
+      if (err.response && err.response.data) {
+        const errorData = err.response.data;
+
+        // Clear all field-specific errors first
+        const newErrors = {
+          username: "",
+          phone: "",
+          email: "",
+          password: "",
+          general: "",
+        };
+
+        // Set the specific field error based on the response
+        if (errorData.field) {
+          newErrors[errorData.field] = errorData.message;
+        } else {
+          newErrors.general = errorData.message || "Registration failed. Please try again.";
+        }
+
+        setErrors(newErrors);
+      } else {
+        setErrors({
+          ...errors,
+          general: "An unexpected error occurred. Please try again.",
+        });
+      }
     }
   };
 
@@ -93,7 +153,8 @@ export default function Signup() {
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
-      }}>
+      }}
+    >
       <Paper
         elevation={4}
         sx={{
@@ -110,27 +171,31 @@ export default function Signup() {
           flexDirection: "column",
           borderRadius: "22px",
           my: 5,
-        }}>
+        }}
+      >
         <Box
           sx={{
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
             mb: 3,
-          }}>
+          }}
+        >
           <img src={hcmut_logo} alt="HCMUT LOGO" style={{ height: "100px" }} />
         </Box>
 
-        <Typography
-          variant="h5"
-          color="primary.dark"
-          textAlign="center"
-          fontWeight="bold"
-          mb={2}>
+        <Typography variant="h5" color="primary.dark" textAlign="center" fontWeight="bold" mb={2}>
           Create New Account
         </Typography>
 
         <Divider sx={{ width: "100%", mb: 3 }} />
+
+        {/* Display general error message if exists */}
+        <Collapse in={!!errors.general}>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {errors.general}
+          </Alert>
+        </Collapse>
 
         <form onSubmit={handleSubmit}>
           <Box
@@ -138,8 +203,8 @@ export default function Signup() {
               display: "grid",
               gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
               gap: 3,
-            }}>
-            {/* Fixed TextField to properly show the label and input */}
+            }}
+          >
             <TextField
               label="First Name"
               name="firstName"
@@ -167,6 +232,7 @@ export default function Signup() {
               }}
               placeholder="Enter last name"
             />
+
             <TextField
               label="Username"
               name="username"
@@ -179,7 +245,10 @@ export default function Signup() {
                 shrink: true,
               }}
               placeholder="Enter username"
+              error={!!errors.username}
+              helperText={errors.username}
             />
+
             <TextField
               label="Phone Number"
               name="phone"
@@ -192,6 +261,8 @@ export default function Signup() {
                 shrink: true,
               }}
               placeholder="Enter phone number"
+              error={!!errors.phone}
+              helperText={errors.phone}
             />
 
             <TextField
@@ -208,22 +279,14 @@ export default function Signup() {
               }}
               placeholder="Enter email"
               sx={{ width: "210%", maxWidth: "1500px" }}
+              error={!!errors.email}
+              helperText={errors.email}
             />
 
-            <FormControl
-              component="fieldset"
-              sx={{ gridColumn: { sm: "1 / span 2" } }}>
+            <FormControl component="fieldset" sx={{ gridColumn: { sm: "1 / span 2" } }}>
               <FormLabel component="legend">Role</FormLabel>
-              <RadioGroup
-                row
-                name="role"
-                value={formData.role}
-                onChange={handleChange}>
-                <FormControlLabel
-                  value="Lecturer"
-                  control={<Radio />}
-                  label="Lecturer"
-                />
+              <RadioGroup row name="role" value={formData.role} onChange={handleChange}>
+                <FormControlLabel value="Lecturer" control={<Radio />} label="Lecturer" />
                 <FormControlLabel
                   value="Guest"
                   control={<Radio />}
@@ -232,7 +295,6 @@ export default function Signup() {
               </RadioGroup>
             </FormControl>
 
-            {/* Fixed Password fields */}
             <TextField
               label="Password"
               name="password"
@@ -246,12 +308,12 @@ export default function Signup() {
                 shrink: true,
               }}
               placeholder="Enter password"
+              error={!!errors.password}
+              helperText={errors.password}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end">
+                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
@@ -272,14 +334,14 @@ export default function Signup() {
                 shrink: true,
               }}
               placeholder="Confirm your password"
+              error={!!errors.password}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                      edge="end">
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      edge="end"
+                    >
                       {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
@@ -297,7 +359,8 @@ export default function Signup() {
                 py: 1.5,
                 borderRadius: "10px",
               }}
-              onClick={() => navigate("/")}>
+              onClick={() => navigate("/")}
+            >
               Back to Home
             </Button>
 
@@ -313,7 +376,8 @@ export default function Signup() {
                 "&:hover": {
                   backgroundColor: "#1565c0",
                 },
-              }}>
+              }}
+            >
               Sign Up
             </Button>
           </Box>

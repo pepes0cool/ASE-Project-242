@@ -38,6 +38,8 @@ const NAV_LECTURER = [
 export default function Appbar() {
   const [anchorElUser, setAnchorElUser] = useState(null);
   const { logout, userInfo } = useAuth();
+  // Thêm dòng này để log userInfo ra console
+  console.log("userInfo data:", userInfo);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -65,16 +67,18 @@ export default function Appbar() {
         variant="text"
         startIcon={page.icon}
         className={`${styles.navButton} ${
-          location.pathname === page.path
-            ? styles.navButtonActive
-            : styles.navButtonInactive
+          location.pathname === page.path ? styles.navButtonActive : styles.navButtonInactive
         }`}
-        onClick={() => navigate(page.path)}>
+        onClick={() => navigate(page.path)}
+      >
         {page.name}
       </Button>
     ));
 
   const firstLetter = userInfo?.first_name?.charAt(0)?.toUpperCase() || "?";
+  const fullName = userInfo
+    ? `${userInfo.first_name || ""} ${userInfo.last_name || ""}`.trim()
+    : "User";
 
   return (
     <AppBar position="sticky" className={styles.appBar}>
@@ -97,9 +101,7 @@ export default function Appbar() {
         {isAuthenticated ? (
           <Box>
             <Tooltip title="Account settings">
-              <IconButton
-                onClick={handleOpenUserMenu}
-                className={styles.userMenuButton}>
+              <IconButton onClick={handleOpenUserMenu} className={styles.userMenuButton}>
                 <Avatar className={styles.avatar}>{firstLetter}</Avatar>
               </IconButton>
             </Tooltip>
@@ -111,15 +113,12 @@ export default function Appbar() {
               onClose={handleCloseUserMenu}
               anchorOrigin={{ vertical: "top", horizontal: "right" }}
               transformOrigin={{ vertical: "top", horizontal: "right" }}
-              PaperProps={{ elevation: 3, className: styles.menuPaper }}>
-              <MenuItem
-                disableRipple
-                className={`${styles.menuItem} ${styles.menuItemNoHover}`}>
+              PaperProps={{ elevation: 3, className: styles.menuPaper }}
+            >
+              <MenuItem disableRipple className={`${styles.menuItem} ${styles.menuItemNoHover}`}>
                 <Avatar sx={{ mr: 1 }}>{firstLetter}</Avatar>
                 <Box>
-                  <Typography fontWeight={600}>
-                    {userInfo?.first_name || "User"}
-                  </Typography>
+                  <Typography fontWeight={600}>{fullName}</Typography>
                   <Typography variant="body2" color="text.secondary">
                     {role.charAt(0).toUpperCase() + role.slice(1)}
                   </Typography>
@@ -128,9 +127,7 @@ export default function Appbar() {
 
               <Divider sx={{ my: 1 }} />
 
-              <MenuItem
-                onClick={handleLogOut}
-                className={styles.menuItemLogout}>
+              <MenuItem onClick={handleLogOut} className={styles.menuItemLogout}>
                 <LogoutIcon color="error" className={styles.menuItemIcon} />
                 <Typography color="error.main">Log out</Typography>
               </MenuItem>
@@ -141,13 +138,15 @@ export default function Appbar() {
             <Button
               variant="outlined"
               className={styles.signupButton}
-              onClick={() => navigate("/signup")}>
+              onClick={() => navigate("/signup")}
+            >
               Sign up
             </Button>
             <Button
               variant="contained"
               className={styles.loginButton}
-              onClick={() => navigate("/login")}>
+              onClick={() => navigate("/login")}
+            >
               Log in
             </Button>
           </Box>

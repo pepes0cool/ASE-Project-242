@@ -596,3 +596,9 @@
   max-width: 200px;   /* optional max size */
   height: auto;
 }
+
+.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+  background-color: #5b5b5b;
+}
